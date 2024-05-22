@@ -6,84 +6,217 @@
 //
 
 import UIKit
+import PhotosUI
 
-class UserTableViewController: UITableViewController {
+class UserTableViewController: UITableViewController, UITextFieldDelegate{
 
+    @IBOutlet weak var name: UITextField!
+    
+    @IBOutlet weak var occupation: UITextField!
+    
+    @IBOutlet weak var number: UITextField!
+    
+    @IBOutlet weak var email: UITextField!
+    
+    @IBOutlet weak var profileImageView: UIImageView!
+    
+    @IBOutlet weak var formButton: UIButton!
+    
+   /// @IBOutlet weak var qrCodeUrl: UITextField!
+    
+    private let manager = DatabaseManager()
+    private var imageSelectedByUser: Bool = false
+    
+    var user: UserData?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-        // self.navigationItem.rightBarButtonItem = self.editButtonItem
+        // Do any additional setup after loading the view.
+        let tapGesture = UIGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
+        name.delegate = self
+        occupation.delegate = self
+        number.delegate = self
+        email.delegate = self
+     
+        configuration()
     }
-
-    // MARK: - Table view data source
-
-    override func numberOfSections(in tableView: UITableView) -> Int {
-        // #warning Incomplete implementation, return the number of sections
-        return 0
+    //MARK: - UI Configuration
+    func configuration(){
+        uiconfiguration()
+        addGesture()
+        userDetailConfiguration()
     }
-
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        // #warning Incomplete implementation, return the number of rows
-        return 0
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let tableViewHeight = self.tableView.frame.height
+        let contentHeight = self.tableView.contentSize.height
+        
+        let centeringInset = (tableViewHeight - contentHeight) / 2.0
+        let topInset = max(centeringInset, 0.0)
+        
+        self.tableView.contentInset = UIEdgeInsets(top: topInset, left: 0.0, bottom: 0.0, right: 0.0)
     }
-
-    /*
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "reuseIdentifier", for: indexPath)
-
-        // Configure the cell...
-
-        return cell
+    func uiconfiguration(){
+        navigationItem.title = "Add User"
+        profileImageView.layer.cornerRadius = profileImageView.frame.size.height / 2
     }
-    */
-
-    /*
-    // Override to support conditional editing of the table view.
-    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the specified item to be editable.
+    
+    func addGesture(){
+        let imageTap = UITapGestureRecognizer(target: self, action: #selector(ViewController.openGallery))
+        profileImageView.addGestureRecognizer(imageTap)
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        switch textField {
+        case name:
+            occupation.becomeFirstResponder()
+        case occupation:
+            number.becomeFirstResponder()
+        case number:
+            email.becomeFirstResponder()
+        case email:
+            // If email is the last field, dismiss the keyboard
+            email.resignFirstResponder()
+        default:
+            break
+        }
         return true
     }
-    */
 
-    /*
-    // Override to support editing the table view.
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            // Delete the row from the data source
-            tableView.deleteRows(at: [indexPath], with: .fade)
-        } else if editingStyle == .insert {
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }    
+    
+    func userDetailConfiguration(){
+        if let user{
+            formButton.setTitle("Update", for: .normal)
+            navigationItem.title = "Update User"
+            name.text = user.name
+            email.text = user.email
+            occupation.text = user.occupation
+            number.text = user.number
+            let imageURL = URL.documentsDirectory.appending(component: user.imageName ?? "").appendingPathExtension("png")
+            profileImageView.image = UIImage(contentsOfFile: imageURL.path())
+            imageSelectedByUser = true
+            
+        }else{
+            navigationItem.title = "Add User"
+            formButton.setTitle("Register", for: .normal)
+        }
     }
-    */
-
-    /*
-    // Override to support rearranging the table view.
-    override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
-
+    @IBAction func submit(_ sender: UIButton) {
+        guard let userName = name.text, !userName.isEmpty else{
+            openAlert(message: "Please enter your first name")
+            return
+        }
+        guard let userOccupation = occupation.text, !userOccupation.isEmpty else{
+            openAlert(message: "Please enter your occupation")
+            return
+        }
+        
+        guard let userNumber = number.text, !userNumber.isEmpty else{
+            openAlert(message: "Please enter your user number")
+            return
+        }
+        
+        guard let userEmail = email.text, !userEmail.isEmpty else{
+            openAlert(message: "Please enter your user email")
+            return
+        }
+//        guard let userQRCodeUrl = qrCodeUrl.text, !userQRCodeUrl.isEmpty else{
+//            openAlert(message: "Please enter your QR Code URL")
+//            return
+//        }
+        
+        
+        if !imageSelectedByUser  {
+            openAlert(message: "Please choose your profile image")
+            return
+        }
+        //print("All Validatioin are done good to go...")
+        
+        if let user{
+            //newUser- Mohan
+            //user()
+            //update
+            let userQRCodeUrl = "hello"
+            var newUser = UserModel(userName: userName, userOccupation: userOccupation, userNumber: userNumber, userEmail: userEmail, imageName: user.imageName ?? "", userQRCodeUrl: userQRCodeUrl)
+            
+            manager.updateUser(user: newUser, userEntity: user)
+            saveImageTodocumentDirectory(imageName: newUser.imageName)
+        }else{
+            //add
+            let userQRCodeUrl = "hello"
+            let  imageName = UUID().uuidString
+            let newUser = UserModel(userName: userName, userOccupation: userOccupation, userNumber: userNumber, userEmail: userEmail, imageName: imageName, userQRCodeUrl: userQRCodeUrl)
+            
+            saveImageTodocumentDirectory(imageName: imageName)
+            manager.adduser(newUser)
+        }
+        navigationController?.popViewController(animated: true)
+        
+        name.text = ""
+        occupation.text = ""
+        number.text = ""
+        email.text = ""
+        
+        //showAlert()
     }
-    */
-
-    /*
-    // Override to support conditional rearranging of the table view.
-    override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-        // Return false if you do not want the item to be re-orderable.
-        return true
+    
+    func  saveImageTodocumentDirectory(imageName: String){
+        let fileURL = URL.documentsDirectory.appending(component: imageName).appendingPathExtension("png")
+        if let data = profileImageView.image?.pngData(){
+            do{
+                try data.write(to: fileURL)
+            }catch{
+                print("Saving image to Document Directory error:", error)
+            }
+        }
     }
-    */
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    func showAlert(){
+        let alertController = UIAlertController(title: "User added", message: "New User added", preferredStyle: .alert)
+        let okay = UIAlertAction(title: "Okay", style: .default)
+        alertController.addAction(okay)
+        present(alertController, animated: true)
     }
-    */
-
+    @objc func openGallery(){
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 1
+        
+        let pickerVC = PHPickerViewController(configuration: config)
+        pickerVC.delegate = self
+        present(pickerVC, animated: true)
+    }
+    
+    @objc func dismissKeyboard(){
+        print("dissmiss keyboard call")
+        view.endEditing(true)
+    }
+    
 }
+
+extension UserTableViewController{
+    func openAlert(message: String){
+        let alertController  = UIAlertController(title: "Alert", message: message, preferredStyle: .alert)
+        let okay = UIAlertAction(title: "Okay", style: .default)
+        alertController.addAction(okay)
+        present(alertController, animated: true)
+    }
+}
+
+extension UserTableViewController: PHPickerViewControllerDelegate{
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        dismiss(animated: true)
+        for result in results {
+            //BackGround thread use karta he
+            result.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
+                guard let image = image as? UIImage else {return}
+                DispatchQueue.main.async{
+                    //Main-Where Ui related work happen
+                    self.profileImageView.image = image
+                    self.imageSelectedByUser = true
+                }
+            }
+        }
+    }
+}
+
+
