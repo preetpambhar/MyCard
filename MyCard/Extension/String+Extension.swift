@@ -16,6 +16,10 @@ extension String{
         let phoneRegEx = "^\\+?\\d{1,4}?[-.\\s]?\\(?\\d{1,3}?\\)?[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,4}[-.\\s]?\\d{1,9}$"
         return applyPredicateOnRegex(regexStr: phoneRegEx) && self.count >= 10
     }
+    func validateURL() -> Bool {
+             let urlRegEx = "((?:http|https)://)?((?:www|[a-zA-Z0-9])[a-zA-Z0-9.-]+)((?:\\.[a-zA-Z]{2,})(/[^\\s]*)?)"
+            return applyPredicateOnRegex(regexStr: urlRegEx)
+        }
     
     func applyPredicateOnRegex(regexStr: String) -> Bool{
         let trimmedString = self.trimmingCharacters(in: .whitespaces)

@@ -141,7 +141,12 @@ class ViewController: UIViewController, UITextFieldDelegate{
                 return
                 }
         }
-        
+        if let url = qrCodeUrl.text{
+            if !url.validateURL(){
+                openAlert(message: "Please enter valid URL Link")
+                return
+                }
+        }
 
         print("All Validatioin are done good to go...")
         print("\(qrCodeUrl!)")
